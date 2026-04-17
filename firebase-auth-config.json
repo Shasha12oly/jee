@@ -1,0 +1,108 @@
+{
+  "authentication": {
+    "sign_in_providers": {
+      "google": {
+        "enabled": true,
+        "settings": {
+          "request_visible_actions": "http://schema.org/AddAction",
+          "fetch_basic_profile": true,
+          "prompt": "select_account"
+        }
+      },
+      "email": {
+        "enabled": false
+      },
+      "phone": {
+        "enabled": false
+      },
+      "anonymous": {
+        "enabled": false
+      }
+    },
+    "blocking_functions": {
+      "before_create": {
+        "enabled": true,
+        "validation_rules": {
+          "email_domain_whitelist": [
+            "gmail.com",
+            "yahoo.com",
+            "outlook.com",
+            "hotmail.com",
+            "icloud.com",
+            "edu.in",
+            "ac.in"
+          ],
+          "block_suspicious_emails": true,
+          "require_verified_email": false
+        }
+      },
+      "before_sign_in": {
+        "enabled": true,
+        "rate_limiting": {
+          "max_attempts": 5,
+          "window_minutes": 15
+        }
+      }
+    },
+    "session_management": {
+      "session_cookie": {
+        "enabled": false,
+        "expires_in": 3600
+      },
+      "id_token": {
+        "enabled": true,
+        "validity": 3600
+      },
+      "refresh_token": {
+        "enabled": true,
+        "validity": 604800
+      }
+    },
+    "multi_factor_auth": {
+      "enabled": false,
+      "enforced": false
+    },
+    "user_provisioning": {
+      "auto_create_user": true,
+      "delete_user": false
+    }
+  },
+  "security": {
+    "password_policy": {
+      "min_length": 8,
+      "require_uppercase": true,
+      "require_lowercase": true,
+      "require_numbers": true,
+      "require_special_chars": false
+    },
+    "account_lockout": {
+      "enabled": true,
+      "max_attempts": 5,
+      "lockout_duration_minutes": 15
+    },
+    "email_verification": {
+      "required": false,
+      "verification_template": "email_verification"
+    },
+    "password_reset": {
+      "enabled": true,
+      "reset_template": "password_reset",
+      "expiration_hours": 24
+    }
+  },
+  "monitoring": {
+    "audit_logs": {
+      "enabled": true,
+      "log_level": "INFO",
+      "retention_days": 30
+    },
+    "anomaly_detection": {
+      "enabled": true,
+      "suspicious_patterns": [
+        "multiple_failed_signins",
+        "rapid_account_creation",
+        "unusual_access_patterns"
+      ]
+    }
+  }
+}

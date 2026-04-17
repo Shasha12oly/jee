@@ -1,0 +1,25 @@
+{
+  "name": "jee-growth-tracker",
+  "version": "1.0.0",
+  "description": "JEE Growth Tracker - A modern platform for JEE aspirants with Firebase integration and dark theme",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node server.js",
+    "build-css": "tailwindcss -i ./src/input.css -o ./public/css/output.css --watch",
+    "build": "tailwindcss -i ./src/input.css -o ./public/css/output.css && echo 'Build complete - static files ready for deployment'",
+    "deploy": "echo 'Deploy to Render - static files are ready'"
+  },
+  "keywords": ["jee", "growth", "tracker", "firebase", "tailwind", "express", "nodejs", "education"],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "express": "^4.18.2",
+    "firebase": "^10.12.0"
+  },
+  "devDependencies": {
+    "tailwindcss": "^3.4.0",
+    "autoprefixer": "^10.4.0",
+    "postcss": "^8.4.0"
+  }
+}
