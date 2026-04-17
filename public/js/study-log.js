@@ -85,15 +85,32 @@ class StudyLogManager {
             return;
         }
 
+        // Check if user already has a study log for today
+        const today = new Date().toISOString().split('T')[0];
+        const todayEntry = await this.getTodayStudyLog(today);
+        
+        if (todayEntry.exists) {
+            console.log('User already has a study log for today, updating it');
+            this.showNotification('Updating today\'s study session with new values!', 'info');
+        } else {
+            console.log('No existing study log for today, creating new one');
+        }
+
         console.log('Current user:', this.currentUser.uid, this.currentUser.email);
 
         const physicsHours = parseFloat(document.getElementById('physicsHours').value) || 0;
         const chemistryHours = parseFloat(document.getElementById('chemistryHours').value) || 0;
         const mathHours = parseFloat(document.getElementById('mathHours').value) || 0;
-        const dailyGoal = parseFloat(document.getElementById('dailyGoal').value) || 0;
-        const notes = document.getElementById('studyNotes').value;
+        const dailyGoal = parseFloat(document.getElementById('dailyGoal').value) || 8;
+        const notes = document.getElementById('studyNotes').value.trim();
 
         console.log('Form values:', { physicsHours, chemistryHours, mathHours, dailyGoal, notes });
+
+        if (physicsHours < 0 || chemistryHours < 0 || mathHours < 0) {
+            console.error('Negative hours detected');
+            this.showNotification('Study hours cannot be negative', 'error');
+            return;
+        }
 
         const totalHours = physicsHours + chemistryHours + mathHours;
 
@@ -122,17 +139,47 @@ class StudyLogManager {
         console.log('Firebase auth instance:', this.auth);
 
         try {
-            console.log('Attempting to save to user collection...');
-            // Add to user's specific study sessions collection
-            const docRef = await this.db.collection('users').doc(this.currentUser.uid).collection('studySessions').add(session);
-            console.log('Successfully saved to user collection with ID:', docRef.id);
+            if (todayEntry.exists) {
+                // Update existing session
+                console.log('Updating existing session with ID:', todayEntry.id);
+                await this.db.collection('users')
+                    .doc(this.currentUser.uid)
+                    .collection('studySessions')
+                    .doc(todayEntry.id)
+                    .update(session);
+                
+                console.log('Successfully updated existing session');
+                
+                // Also update global collection if it exists
+                const globalSnapshot = await this.db.collection('studySessions')
+                    .where('userId', '==', this.currentUser.uid)
+                    .where('date', '==', today)
+                    .get();
+                
+                if (!globalSnapshot.empty) {
+                    await this.db.collection('studySessions')
+                        .doc(globalSnapshot.docs[0].id)
+                        .update(session);
+                    console.log('Successfully updated global session');
+                }
+                
+                this.showNotification('Study session updated successfully!', 'success');
+            } else {
+                // Create new session
+                console.log('Creating new session...');
+                const docRef = await this.db.collection('users')
+                    .doc(this.currentUser.uid)
+                    .collection('studySessions')
+                    .add(session);
+                console.log('Successfully created new session with ID:', docRef.id);
+                
+                // Also add to global collection for analytics
+                const globalRef = await this.db.collection('studySessions').add(session);
+                console.log('Successfully added to global collection with ID:', globalRef.id);
+                
+                this.showNotification('Study session logged successfully!', 'success');
+            }
             
-            console.log('Attempting to save to global collection...');
-            // Also add to global collection for analytics (optional)
-            const globalRef = await this.db.collection('studySessions').add(session);
-            console.log('Successfully saved to global collection with ID:', globalRef.id);
-            
-            this.showNotification('Study session logged successfully!', 'success');
             this.clearForm();
             this.loadStudySessions();
             
@@ -360,6 +407,47 @@ class StudyLogManager {
         } catch (error) {
             console.error('Error deleting study session:', error);
             this.showNotification('Failed to delete study session: ' + error.message, 'error');
+        }
+    }
+
+    async getTodayStudyLog(today) {
+        console.log('=== GETTING TODAY STUDY LOG START ===');
+        console.log('Checking for date:', today);
+        console.log('User ID:', this.currentUser.uid);
+        
+        try {
+            // Check user's study sessions collection for today's entry
+            const query = await this.db.collection('users')
+                .doc(this.currentUser.uid)
+                .collection('studySessions')
+                .where('date', '==', today)
+                .limit(1)
+                .get();
+            
+            if (!query.empty) {
+                const doc = query.docs[0];
+                console.log('Found today entry:', doc.id);
+                return {
+                    exists: true,
+                    id: doc.id,
+                    data: doc.data()
+                };
+            } else {
+                console.log('No today entry found');
+                return {
+                    exists: false,
+                    id: null,
+                    data: null
+                };
+            }
+        } catch (error) {
+            console.error('Error getting today study log:', error);
+            // If there's an error, return no entry (fail-safe)
+            return {
+                exists: false,
+                id: null,
+                data: null
+            };
         }
     }
 
